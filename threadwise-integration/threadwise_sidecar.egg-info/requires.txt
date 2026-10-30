@@ -1,0 +1,12 @@
+fastapi<1,>=0.115
+uvicorn[standard]<1,>=0.34
+httpx<1,>=0.28
+websockets<16,>=14
+tzdata>=2024.1
+mem0ai<1,>=0.1
+langchain<2,>=1
+langchain-groq<2,>=1
+
+[test]
+pytest<9,>=8
+httpx<1,>=0.28

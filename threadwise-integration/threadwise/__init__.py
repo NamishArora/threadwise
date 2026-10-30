@@ -1,0 +1,2 @@
+"""Threadwise Mattermost sidecar."""
+

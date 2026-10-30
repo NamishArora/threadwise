@@ -1,0 +1,77 @@
+{
+  "id": "com.threadwise.mattermost",
+  "name": "Threadwise",
+  "description": "AI thread and channel intelligence for Mattermost.",
+  "homepage_url": "https://github.com/NamishArora/threadwise",
+  "support_url": "https://github.com/NamishArora/threadwise/issues",
+  "min_server_version": "11.0.0",
+  "server": {
+    "executables": {
+      "linux-amd64": "server/dist/plugin-linux-amd64",
+      "linux-arm64": "server/dist/plugin-linux-arm64",
+      "darwin-amd64": "server/dist/plugin-darwin-amd64",
+      "darwin-arm64": "server/dist/plugin-darwin-arm64",
+      "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+    }
+  },
+  "settings_schema": {
+    "header": "Configure provider credentials and model names. Keys are stored in Mattermost plugin settings.",
+    "footer": "Conversation content and summaries are sent to the configured Groq and Mem0 APIs.",
+    "settings": [
+      {
+        "key": "GroqAPIKey",
+        "display_name": "Groq API Key",
+        "type": "text",
+        "secret": true
+      },
+      {
+        "key": "Mem0APIKey",
+        "display_name": "Mem0 API Key",
+        "type": "text",
+        "secret": true
+      },
+      {
+        "key": "FastModel",
+        "display_name": "Fast Model",
+        "type": "text",
+        "default": "llama-3.1-8b-instant"
+      },
+      {
+        "key": "SummaryModel",
+        "display_name": "Summary Model",
+        "type": "text",
+        "default": "llama-3.3-70b-versatile"
+      },
+      {
+        "key": "MaxPosts",
+        "display_name": "Maximum Messages Per Summary",
+        "type": "number",
+        "default": 100
+      },
+      {
+        "key": "DigestTime",
+        "display_name": "Weekday Digest Time",
+        "type": "text",
+        "default": "09:00"
+      },
+      {
+        "key": "Timezone",
+        "display_name": "Digest Timezone",
+        "type": "text",
+        "default": "UTC"
+      },
+      {
+        "key": "CommitmentDays",
+        "display_name": "Commitment Follow-up Threshold (Days)",
+        "type": "number",
+        "default": 3
+      },
+      {
+        "key": "InactivityDays",
+        "display_name": "Inactivity Threshold (Days)",
+        "type": "number",
+        "default": 14
+      }
+    ]
+  }
+}

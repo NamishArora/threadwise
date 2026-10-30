@@ -1,0 +1,17 @@
+services:
+  threadwise:
+    build: .
+    env_file: .env
+    environment:
+      MATTERMOST_URL: ${MATTERMOST_URL:-http://host.docker.internal:8065}
+      DATABASE_PATH: /data/threadwise.sqlite3
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - threadwise-data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  threadwise-data:

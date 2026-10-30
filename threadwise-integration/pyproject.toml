@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "threadwise-sidecar"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.34,<1",
+  "httpx>=0.28,<1",
+  "websockets>=14,<16",
+  "tzdata>=2024.1",
+  "mem0ai>=0.1,<1",
+  "langchain>=1,<2",
+  "langchain-groq>=1,<2",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9", "httpx>=0.28,<1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["threadwise*"]
+exclude = ["tests*"]
