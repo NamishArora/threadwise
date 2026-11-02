@@ -24,6 +24,7 @@ type ThreadwisePlugin struct {
 	client      *pluginapi.Client
 	config      Settings
 	service     *Service
+	botUserID   string
 	digestMutex *cluster.Mutex
 	ctx         context.Context
 	cancel      context.CancelFunc
@@ -88,9 +89,17 @@ func (p *ThreadwisePlugin) OnConfigurationChange() error {
 
 func (p *ThreadwisePlugin) OnActivate() error {
 	p.client = pluginapi.NewClient(p.API, p.Driver)
+	botUserID, err := p.client.Bot.EnsureBot(&model.Bot{
+		Username:    "threadwise-assistant",
+		DisplayName: "Threadwise",
+		Description: "Posts Threadwise AI answers in conversation threads.",
+	})
+	if err != nil {
+		return fmt.Errorf("ensure Threadwise bot: %w", err)
+	}
+	p.botUserID = botUserID
 	p.ctx, p.cancel = context.WithCancel(context.Background())
 	p.service = NewService(p.client, p.currentSettings)
-	var err error
 	p.digestMutex, err = cluster.NewMutex(p.API, "threadwise_digest_scheduler")
 	if err != nil {
 		return fmt.Errorf("create Threadwise digest scheduler mutex: %w", err)
@@ -154,8 +163,13 @@ func (p *ThreadwisePlugin) MessageHasBeenPosted(_ *plugin.Context, post *model.P
 	p.service.recordActivity(post)
 	question, ok := aiQuestion(post.Message)
 	if !ok {
+		lowerMessage := strings.ToLower(post.Message)
+		if strings.Contains(lowerMessage, "@ai") || strings.Contains(lowerMessage, "@threadwise") {
+			p.API.LogDebug("Threadwise ignored a mention that was not at the start of the post", "post_id", post.Id, "channel_id", post.ChannelId)
+		}
 		return
 	}
+	p.API.LogInfo("Threadwise matched a question mention", "post_id", post.Id, "channel_id", post.ChannelId, "thread_id", post.RootId, "has_question", question != "")
 	if question == "" {
 		p.sendEphemeral(post.UserId, post.ChannelId, rootID(post), "Add a question after `@AI`.")
 		return
@@ -167,8 +181,48 @@ func (p *ThreadwisePlugin) MessageHasBeenPosted(_ *plugin.Context, post *model.P
 			p.sendEphemeral(post.UserId, post.ChannelId, rootID(post), "Threadwise could not answer right now. Please try again later.")
 			return
 		}
-		p.sendEphemeral(post.UserId, post.ChannelId, rootID(post), answer)
+		reply := &model.Post{
+			UserId:    p.botUserID,
+			ChannelId: post.ChannelId,
+			RootId:    rootID(post),
+			Message:   answer,
+		}
+		if err := p.ensureBotMembership(post.ChannelId); err != nil {
+			p.API.LogError("Threadwise could not join conversation to post public reply", "error", err.Error(), "post_id", post.Id, "channel_id", post.ChannelId)
+			p.sendEphemeral(post.UserId, post.ChannelId, rootID(post), "Threadwise could not post a public reply right now. Please try again later.")
+			return
+		}
+		if err := p.client.Post.CreatePost(reply); err != nil {
+			p.API.LogError("Threadwise could not post public reply", "error", err.Error(), "post_id", post.Id, "channel_id", post.ChannelId)
+			p.sendEphemeral(post.UserId, post.ChannelId, rootID(post), "Threadwise could not post a public reply right now. Please try again later.")
+			return
+		}
+		p.API.LogInfo("Threadwise posted a public thread reply", "post_id", post.Id, "reply_id", reply.Id, "channel_id", post.ChannelId, "thread_id", rootID(post))
 	}(post.Clone(), question)
+}
+
+func (p *ThreadwisePlugin) ensureBotMembership(channelID string) error {
+	channel, err := p.client.Channel.Get(channelID)
+	if err != nil {
+		return fmt.Errorf("get channel: %w", err)
+	}
+	if channel.TeamId != "" {
+		if _, err := p.client.Team.GetMember(channel.TeamId, p.botUserID); err != nil {
+			if _, addErr := p.client.Team.CreateMember(channel.TeamId, p.botUserID); addErr != nil {
+				if _, memberErr := p.client.Team.GetMember(channel.TeamId, p.botUserID); memberErr != nil {
+					return fmt.Errorf("join team: %w", addErr)
+				}
+			}
+		}
+	}
+	if _, err := p.client.Channel.GetMember(channelID, p.botUserID); err != nil {
+		if _, addErr := p.client.Channel.AddMember(channelID, p.botUserID); addErr != nil {
+			if _, memberErr := p.client.Channel.GetMember(channelID, p.botUserID); memberErr != nil {
+				return fmt.Errorf("join channel: %w", addErr)
+			}
+		}
+	}
+	return nil
 }
 
 func rootID(post *model.Post) string {
@@ -180,6 +234,7 @@ func rootID(post *model.Post) string {
 
 func (p *ThreadwisePlugin) sendEphemeral(userID, channelID, rootID, text string) {
 	p.client.Post.SendEphemeralPost(userID, &model.Post{
+		UserId:    userID,
 		ChannelId: channelID,
 		RootId:    rootID,
 		Message:   text,

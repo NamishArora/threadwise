@@ -634,6 +634,7 @@ func (s *Service) sendUserDigest(ctx context.Context, userID string, now time.Ti
 			continue
 		}
 		s.client.Post.SendEphemeralPost(userID, &model.Post{
+			UserId:    userID,
 			ChannelId: channelID,
 			RootId:    threadID,
 			Message:   "Threadwise follow-up digest\n" + strings.Join(items, "\n"),

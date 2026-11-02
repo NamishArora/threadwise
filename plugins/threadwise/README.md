@@ -1,6 +1,6 @@
 # Threadwise Mattermost plugin
 
-Threadwise runs as a Go plugin managed by Mattermost. It does not need a separate Python service, slash-command callback URLs, or a manually created bot account. It uses Mattermost's plugin APIs and calls Groq and Mem0 directly.
+Threadwise runs as a Go plugin managed by Mattermost. It does not need a separate Python service, slash-command callback URLs, or a manually created bot account; it provisions its own bot identity for public AI replies and joins teams/channels as needed. It uses Mattermost's plugin APIs and calls Groq and Mem0 directly.
 
 ```text
 Mattermost channel/thread event
@@ -17,7 +17,7 @@ Mattermost slash command
 
 ## Features
 
-- `@AI <question>` or `@threadwise <question>` in a conversation returns a private, ephemeral answer in that thread.
+- `@AI <question>` or `@threadwise <question>` in a conversation returns a persisted thread reply visible to everyone in the channel.
 - `/summarize` summarizes up to the configured number of recent channel messages. When used in a thread, it summarizes that thread instead. The response includes a TL;DR, commitments, and open follow-ups.
 - `/threadwise-email <email text>` returns a private summary and temporarily stores its draft for 24 hours.
 - `/threadwise attach <post-id>` attaches the current user's email draft to that conversation's Mem0 memory.
@@ -76,7 +76,7 @@ Mem0 records include platform-level `user_id` and metadata:
 }
 ```
 
-Retrieval filters by the requesting Mattermost user's ID, then independently accepts only Threadwise records belonging to the exact thread and channel; only that same user's preferences can cross threads. Before reading a thread, the plugin verifies the requester is a channel member. AI answers and slash-command outputs are ephemeral and private to the requester, avoiding a plugin-created bot account.
+Retrieval filters by the requesting Mattermost user's ID, then independently accepts only Threadwise records belonging to the exact thread and channel; only that same user's preferences can cross threads. Before reading a thread, the plugin verifies the requester is a channel member. AI answers are persisted as public replies from the Threadwise bot and may include the requester's scoped Mem0 memories and preferences, so channel members can see that content. Mentioning Threadwise publishes that answer to the conversation. Slash-command outputs remain ephemeral and private to the requester.
 
 ## Product questions
 
