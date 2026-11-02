@@ -1,6 +1,6 @@
-# Threadwise Mattermost plugin
+# ThreadWise Plugin
 
-Threadwise runs as a Go plugin managed by Mattermost. It does not need a separate Python service, slash-command callback URLs, or a manually created bot account. It uses Mattermost's plugin APIs and calls Groq and Mem0 directly.
+ThreadWise runs as a Go plugin managed by the platform. It does not need a separate Python service, slash-command callback URLs, or a manually created bot account. It uses plugin APIs and calls Groq and Mem0 directly.
 
 ```text
 Mattermost channel/thread event

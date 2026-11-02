@@ -1,10 +1,14 @@
 {
   "id": "com.threadwise.mattermost",
-  "name": "Threadwise",
+  "name": "ThreadWise",
   "description": "AI thread and channel intelligence for Mattermost.",
   "homepage_url": "https://github.com/NamishArora/threadwise",
   "support_url": "https://github.com/NamishArora/threadwise/issues",
   "min_server_version": "11.0.0",
+  "version": "0.1.0",
+  "webapp": {
+    "bundle_path": "webapp/dist/main.js"
+  },
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",

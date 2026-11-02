@@ -148,25 +148,35 @@ func (p *ThreadwisePlugin) ExecuteCommand(_ *plugin.Context, args *model.Command
 }
 
 func (p *ThreadwisePlugin) MessageHasBeenPosted(_ *plugin.Context, post *model.Post) {
+	p.API.LogInfo("MessageHasBeenPosted invoked")
 	if post == nil || post.UserId == "" || post.ChannelId == "" || post.Type != "" {
+		p.API.LogInfo("MessageHasBeenPosted ignored: post is nil, missing identifiers, or is a system message")
 		return
 	}
 	p.service.recordActivity(post)
 	question, ok := aiQuestion(post.Message)
+	p.API.LogInfo("Checked AI mention prefix", "matched", ok)
 	if !ok {
+		p.API.LogInfo("MessageHasBeenPosted ignored: no AI prefix matched")
 		return
 	}
 	if question == "" {
+		p.API.LogInfo("MessageHasBeenPosted ignored: question text is empty")
+		p.API.LogInfo("Sending ephemeral response: prompt for question")
 		p.sendEphemeral(post.UserId, post.ChannelId, rootID(post), "Add a question after `@AI`.")
 		return
 	}
 	go func(post *model.Post, question string) {
+		p.API.LogInfo("Starting AI answer processing")
 		answer, err := p.service.Answer(p.ctx, post, question)
 		if err != nil {
 			p.API.LogError("Threadwise could not answer message", "error", err.Error())
+			p.API.LogInfo("Sending ephemeral response: error notification")
 			p.sendEphemeral(post.UserId, post.ChannelId, rootID(post), "Threadwise could not answer right now. Please try again later.")
 			return
 		}
+		p.API.LogInfo("AI answer processing completed successfully")
+		p.API.LogInfo("Sending ephemeral response: AI answer")
 		p.sendEphemeral(post.UserId, post.ChannelId, rootID(post), answer)
 	}(post.Clone(), question)
 }
